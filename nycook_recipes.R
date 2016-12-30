@@ -73,8 +73,13 @@ get_recipe<-function(url){
   recipe_id<-gsub(web_url, "", recipe_pages)%>% ##clean up link ids
     gsub(pattern='"',replacement= "")%>%
     str_trim(side="both")
+  
+  recipe_ingredients=NULL #empty df for ingredient list
+  ##then integrate in the for loop
 }
 
+
+####################################
 recipe_ingredients=NULL
 ##loop to pull ingredients from all recipes in list from nytimes
 for (i in recipe_id){
@@ -96,45 +101,52 @@ for (i in recipe_id){
     str_replace_all(pattern="[^[:alnum:]]", replacement=" ")
   rec_name<-gsub(i, pattern="^.*?\\-", replacement="") ##convert url to recipe name
   ##remove extra wordage
-  measures<-c("teaspoon","tablespoon","teaspoons","tablespoons","can","cup","pounds","pound","cups","stick","sticks","pint","quart","pinch","gallon","ounce","grams","ounces","gallons","quarts","pints","kg","mg","milliliters")
-  adjectives<-c("boneless","squeezed","stalks","rich","or","prepared","mixed","slivered","day","old","fine","rolled","raw","wild","and","unsalted","ripe","bunch","firm","size","plus","head","neutral","cleaned","extra","very","sifted","branches","kosher","yellow","juice","zest","paste","clove","cloves","tender","leaves","large","fresh","sprigs","skinless","medium","small","diced","chopped","thick","slices","sliced","minced","packed","loosely","flaky","handful","crushed","roughly","pitted","finely","low sodium","whole","cold","hot","warm","toasted","roasted","grated","shredded","peeled","skinned","freshly","unsweetened","canned","dried","ground")
+  measures<-c("teaspoon","tablespoon","teaspoons","ears ","stems of","sleeve","s", "sprig","to taste","tablespoons"," can ","cup","pounds","pound","cups","stick","sticks","pint","quart","pinch","gallon","ounce","grams","ounces","gallons","quarts","pints","kg","mg","milliliters")
+  adjectives<-c("boneless","squeezed","stalks","rich","prepared","about"," of "," or ","mixed","slivered"," day "," old ","fine","rolled","raw ","wild"," and ","unsalted","ripe","bunch","firm","size","plus","head","neutral","cleaned","extra","very","sifted","branches","kosher","yellow","juice","zest","paste","clove","cloves","tender","leaves","large","fresh","sprigs","skinless","medium","small","diced","chopped","thick","slices","sliced","minced","packed","loosely","flaky","handful","crushed","roughly","pitted","finely","low sodium","whole","cold","hot","warm","toasted","roasted","grated","shredded","peeled","skinned","freshly","unsweetened","canned","dried","ground")
   ing_o <- as.character(sapply(ingredients, function(x) 
-    gsub(paste(measures, collapse = '|'), '', x)))
+    gsub(paste(measures, collapse = '|'), '', x, fixed=TRUE)))
   ing_only <- as.character(sapply(ing_o, function(x) 
-    gsub(paste(adjectives, collapse = '|'), '', x)))
+    gsub(paste(adjectives, collapse = '|'), '', x, fixed=TRUE)))
   ing_only<-ing_only%>%str_trim(side="both")#clean whitespace
   ingreds<-data.frame(recipe = rep(rec_name,length(ing_only)), ingredient = ing_only)
-  recipes=rbind(recipes,ingreds)#return df
+  recipe_ingredients=rbind(recipes,ingreds)#return df
 }
-##how many ingredients are in each recipe?
-View(recipe_ingredients)
-
-ing_count<-recipe_ingredients%>%
-  group_by(recipe)%>%
-  summarize(n_ingredients = length(ingredients), 
-            ingredient_list= paste(ingredient, collapse = ", "))
-
-View(ing_count)
-str(recipe_ingredients)
 length(unique(recipe_ingredients$recipe))
 length(unique(recipe_ingredients$ingredient))
 length(recipe_ingredients$ingredient)
+View(recipe_ingredients)
+
+##how many ingredients are in each recipe?
+ing_count<-recipe_ingredients%>%
+  group_by(recipe)%>%
+  summarize(n_ingredients = length(unique(ingredient)), 
+            ingredient_list= paste(ingredient, collapse = ", "))
+View(ing_count)
+
 ##look at results
 df<-recipe_ingredients%>%
   group_by(ingredient)%>%
   summarize(recipes_in = length(recipe))
-fd<-recipe_ingredients
-fd$num<-1
-fd<-fd%>%
-  group_by(recipe, ingredient)%>%
-  summarize(nu=sum(num))
+View(df)
+
+fd<-recipe_ingredients[-1,]
 fd.melt<-melt(fd, id.vars=c("recipe"),na.rm=FALSE)
-View(fd.melt)
-
-str(fd.melt)
-length(unique(fd.melt$value))
-
-View(fd)
 trec_cast<-dcast(fd.melt, recipe~value,fill=0, drop=FALSE)
-View(trec_cast)
-str(trec_cast)
+rec_wide<-trec_cast%>%select(-contains('href'), -Var.2)
+View(rec_wide)
+###wide df- recipe x ingredients
+recs<-rec_wide[,-1]
+rownames(recs)<-rec_wide$recipe
+View(recs)
+rec<-as.matrix(recs)
+###network data
+##adjacency matrix
+#by ingredients
+ing_adj<-crossprod(rec)
+
+
+##recipes similar to one another
+rec_adj<-crossprod(t(rec))
+
+
+
