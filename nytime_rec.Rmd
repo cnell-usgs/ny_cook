@@ -1,5 +1,8 @@
+
+```{r, include=F, echo=F, message=F, warning=F}
 library(stringr)
 library(rvest)
+library(dplyr)
 
 nycook<-read_html("http://cooking.nytimes.com/68861692-nyt-cooking/3891782-our-50-most-popular-recipes-of-2016")
 url<-"http://cooking.nytimes.com/68861692-nyt-cooking/3891782-our-50-most-popular-recipes-of-2016"
@@ -11,40 +14,6 @@ recipe_id<-gsub(web_url, "", recipe_pages)%>% ##clean up link ids
   gsub(pattern='"',replacement= "")%>%
   str_trim(side="both")
 recipe_id##looks good
-##now write urls for each recipe
-site_pre<-'http://cooking.nytimes.com'
-site_post<-'?action=click&module=Collection+Page+Recipe+Card&region=Our+50+Most+Popular+Recipes+of+2016&pgType=collection&rank=1'
-recipe_sites<-as.list(paste0(site_pre, recipe_id, site_post))
-#recipe_sites
-cook_sites<-data.frame(site = recipe_sites,id= recipe_id)
-##now pull recipe data from each site
-######################
-##function that takes a nytimes recipe list and extracts all the ingredients for each recipe
-##returns a df with the name of the recipe and ingredients found in each
-##does some cleaning of ingredient names to match (imperfect)
-##written for the top recipes of 2016, working on making universal
-#params
-#url = the url of the nytimes cooking website list
-##currently incomplete
-get_recipe<-function(url){
- ##use url to find the key of each recipe and make list called recipe_id
- ##find in url where the key is and how to split
-  #
-  nycook<-read_html("http://cooking.nytimes.com/68861692-nyt-cooking/3891782-our-50-most-popular-recipes-of-2016")
-  url<-"http://cooking.nytimes.com/68861692-nyt-cooking/3891782-our-50-most-popular-recipes-of-2016"
-  cook<-readLines(url)##read webpage
-  
-  ##pull url for weblinks
-  web_url<-'data-url=\"'
-  recipe_pages<-grep(web_url, cook[243:length(cook)], value=TRUE)##pull addys
-  recipe_id<-gsub(web_url, "", recipe_pages)%>% ##clean up link ids
-    gsub(pattern='"',replacement= "")%>%
-    str_trim(side="both")
-  
-  recipe_ingredients=NULL #empty df for ingredient list
-  ##then integrate in the for loop
-}
-
 
 ####################################
 recipe_ingredients=NULL ##empty df
@@ -69,7 +38,7 @@ for (i in recipe_id){
   rec_name<-gsub(i, pattern="^.*?\\-", replacement="") ##convert url to recipe name
   ##remove extra wordage
   measures<-c("teaspoon","two","ct","tablespoon","more","teaspoons","handful","ears ","stems of","sleeve","large","diced", "sprig","to taste","tablespoons"," can ","cup","pounds","pound","cups","stick","sticks","pint","quart","pinch","gallon","ounce","grams","ounces","gallons","quarts","pints","kg","mg","milliliters")
-  adjectives<-c("young","good quality brine cured ","basic"," not quick cooking","hungarian ","italian","rib","like soom","liquid","seed","smooth","thick","cooked","grappa","crushed","use a food processor if you have one","from ","torn","stems","to ","coarse","at room temperature","heaping","optional","white","fleshed","chopped","loosely","small","ripe","yellow","boneless","squeezed","stalks","rich","prepared","about"," of "," or","mixed","slivered"," day "," old ","fine","rolled","raw ","wild"," and ","unsalted","ripe","bunch","firm","size","plus","head","neutral","cleaned","extra","very","sifted","branches","kosher","yellow","juice","zest","paste","clove","cloves","tender","leaves","large","fresh","sprigs","skinless","medium","small","diced","chopped","thick","slices","sliced","minced","packed","loosely","flaky","handful","crushed","roughly","pitted","finely","low sodium","whole","cold","hot","warm","toasted","roasted","grated","shredded","peeled","skinned","freshly","unsweetened","canned","dried","ground")
+  adjectives<-c("dry","young","good quality brine cured ","basic"," not quick cooking","hungarian ","italian","rib","like soom","liquid","seed","smooth","thick","cooked","grappa","crushed","use a food processor if you have one","from ","torn","stems","to ","coarse","at room temperature","heaping","optional","white","fleshed","chopped","loosely","small","ripe","yellow","boneless","squeezed","stalks","rich","prepared","about"," of "," or","mixed","slivered"," day "," old ","fine","rolled","raw ","wild"," and ","unsalted","ripe","bunch","firm","size","plus","head","neutral","cleaned","extra","very","sifted","branches","kosher","yellow","juice","zest","paste","clove","cloves","tender","leaves","large","fresh","sprigs","skinless","medium","small","diced","chopped","thick","slices","sliced","minced","packed","loosely","flaky","handful","crushed","roughly","pitted","finely","low sodium","whole","cold","hot","warm","toasted","roasted","grated","shredded","peeled","skinned","freshly","unsweetened","canned","dried","ground")
   ing_o <- as.character(sapply(ingredients, function(x) 
     gsub(paste(measures, collapse = '|'), '', x)))
   ing_only <- as.character(sapply(ing_o, function(x) 
@@ -82,10 +51,7 @@ for (i in recipe_id){
   ingreds<-ingreds[!grepl("href", ingreds$ingredient),]
   recipe_ingredients=rbind(recipe_ingredients,ingreds)#return df
 }
-##look at results
-length(unique(recipe_ingredients$recipe))
-length(unique(recipe_ingredients$ingredient))
-length(recipe_ingredients$ingredient)
+
 ez<-recipe_ingredients
 ez$ingredient<-as.character(ez$ingredient)
 ez$ingredienty<-as.character(ifelse(grepl("olive oil", ez$ingredient), 'oliveoil',
@@ -120,7 +86,7 @@ ez$ingredienty<-as.character(ifelse(grepl("olive oil", ez$ingredient), 'oliveoil
                                                                                       ifelse(grepl("chocolate", ez$ingredient), 'chocolate',
                                                                                              ifelse(grepl("cocoa", ez$ingredient), 'chocolate',
                                                                                                     ifelse(grepl("ecchiette", ez$ingredient), 'ecchiette',
-                                                                                                           ifelse(grepl("egano", ez$ingredient), 'egano',
+                                                                                                           ifelse(grepl("egano", ez$ingredient), 'oregano',
                                                                                                                   ifelse(grepl("cardamom", ez$ingredient), 'cardamom',
                                                                                                                          ifelse(grepl("gruyère", ez$ingredient), 'gruyère',
                                                                                                                                 ifelse(grepl("jalapeño", ez$ingredient), 'jalapeño',
@@ -137,35 +103,21 @@ ez$ingredienty<-as.character(ifelse(grepl("olive oil", ez$ingredient), 'oliveoil
                                                                                                                          
                                                                  ez$ingredient))))))))))))))))))))))))))))))))))))))))))))))))
 
-
-length(unique(ez$ingredienty))
-##how many ingredients are in each recipe?
-#ing_count<-ez%>%
- # group_by(recipe)%>%
-  #summarize(n_ingredients = length(unique(ingredienty)), 
-   #         ingredient_list= paste(ingredienty, collapse = ", "))
-#View(ing_count)
-
 ##ingredient counts
 df<-ez%>%
   group_by(ingredienty)%>%
   summarize(recipes_in = length(recipe))
-View(df)
-df_short<-filter(df, df$recipes_in>=4)
-str(df_short)
+df_short<-filter(df, df$recipes_in>=3)
 ings<-df_short$ingredienty
-ings
 ##make adjacency matrix
 library(reshape2)
 fd<-ez[,c("recipe","ingredienty")]
 fd.melt<-melt(fd, id.vars=c("recipe"),na.rm=FALSE)
 fd.melt<-filter(fd.melt, value %in% ings)
-str(fd.melt)
 trec_cast<-dcast(fd.melt, recipe~value,fill=0, drop=FALSE)
 
-rec_wide<-trec_cast%>%select(-salt, -butter, -garlic, -oil, -blackpepper, -oliveoil)
-str(rec_wide)
-View(rec_wide)
+rec_wide<-trec_cast%>%select(-salt, -butter, -garlic, -oil, -blackpepper, -oliveoil, -Var.2)
+
 ###wide df- recipe x ingredients
 recs<-rec_wide[,-1]
 rownames(recs)<-rec_wide$recipe
@@ -175,7 +127,7 @@ rec<-as.matrix(recs)
 #by ingredients
 
 ing_adj<-crossprod(rec)
-View(ing_adj)##which ingredients are found in recipes together
+
 
 ##recipes similar to one another
 rec_adj<-crossprod(t(rec))##recipes with simialr ingredients
@@ -186,30 +138,19 @@ library(network)
 library(sna)
 library(ndtv)
 library(visNetwork)
-str(net3)
+
 net3<-graph_from_adjacency_matrix(ing_adj, diag=FALSE, mode="undirected", weighted=TRUE)
 net <- simplify(net3, remove.multiple = T, remove.loops = T)
-E(net)$width<- 2+E(net)$weight/5
+E(net)$width<- 1+E(net)$weight/5
+```
+```{r, fig.width=11, fig.height=11, echo=F}
 
-str(net)
-plot(net, edge.arrow.size=.2, edge.color="orange",
-     vertex.color="orange", vertex.frame.color="#ffffff",
-     vertex.label=V(net3)$recipe, vertex.label.color="black")
 plot(net, vertex.label=V(net3)$recipe, edge.color="lightseagreen",
-     vertex.color="orange", vertex.frame.color="#ffffff",
-     vertex.label.font=2, vertex.label.color="black",
-     vertex.label.cex=1, edge.color="gray85",
-     layout=layout_with_lgl, edge.width=E(net)$weight)
+     vertex.color="white", vertex.frame.color="#ffffff", vertex.label.color="black",
+     vertex.label.cex=1, edge.color="gray85",edge.curved=.1,vertex.shape="none",
+     vertex.label.font=2,
+     layout=layout_with_mds, edge.width=E(net)$width)
+```
 
-install.packages('ggplot2')
-library(ggplot2)
-library(GGally)
+This visualization is based on the 50 most popular recipes of 2016 by NY Times Cooking. This is a dataset I created by scraping the webpage of each recipe (http://cooking.nytimes.com/68861692-nyt-cooking/3891782-our-50-most-popular-recipes-of-2016) for its’ ingredient list. Then I cleaned the dataset to obtain common naming for each ingredient and removing adjectives and measurements. I removed the most common ingredients (olive oil, butter, salt, pepper), then I created an adjacency matrix for each ingredient where the edges between ingredients are indicative of the number of recipes they are in together. The width of the edges reflects the number of recipes each ingredient pair is found in together and nodes are spaced relative to one another based on how similar they are in the recipes they are found in.   
 
-devtools::install_github("briatte/ggnet", force=TRUE)
-library(ggnet2)
-library(network)
-library(sna)
-library(ggplot2)
-?rgraph
-?ggnet2
-??ggnet2
